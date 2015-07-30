@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+"""
+Slumber
+"""
+
+from slumber.cli import main
+
+if __name__ == '__main__':
+    main()
