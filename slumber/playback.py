@@ -7,6 +7,7 @@ Makes use of the pygame mixer
 import datetime
 import logging
 import os
+import random
 
 import pygame
 
@@ -30,6 +31,8 @@ class PlaybackManager(object):
         self.loop = None
 
         # this will be used to track our currently playing sounds
+        self.next_channel_id = 0
+        self.channels = {}
         self.sounds = {}
         self.stages = []
         self.current_stage = None
@@ -60,12 +63,48 @@ class PlaybackManager(object):
 
     def start(self, loop):
         """
-        Start playback via an event loop
+        Start playback via an event loop based on 90 minute cycles
+
+        Start a sound from each stage.
+
+        A sound from the first stage will always be playing
+
 
         :param: loop: the event loop to use
         """
         self.loop = loop
-        self.messing_around()
+
+        for stage in self.stages:
+            self.play_sound_for_stage(stage, random.choice(self.sounds[stage]))
+
+    def play_sound_for_stage(self, stage, sound_file):
+        self.log.info("[%s] Starting %s", stage, sound_file)
+
+        if stage not in self.channels:
+            # we need to get a new channel
+            self.channels[stage] = self.get_channel()
+
+            # and play the sound
+            sound = pygame.mixer.Sound(sound_file)
+            self.channels[stage].play(sound, -1)
+
+            # and that's it
+            return
+
+        # we need to "swap" channels
+        raise NotImplemented("Oops.  You'd better figure out how to do this.")
+
+
+    def get_channel(self):
+        """
+        Get a new channel
+
+        :return:
+        """
+        channel_id = self.next_channel_id
+        channel = pygame.mixer.Channel(channel_id)
+        self.next_channel_id += 1
+        return channel
 
     def messing_around(self):
         self.log.debug("Playing")
