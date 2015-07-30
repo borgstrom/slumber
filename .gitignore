@@ -1,0 +1,25 @@
+MANIFEST
+*.pyc
+
+.idea/
+.tox*
+.env
+.venv*
+build/
+config/
+dist/
+*.egg-info/
+*.egg
+
+activate
+
+*.sublime-*
+
+.coverage
+TEST-*.xml
+
+# vim swap files
+.*.sw[po]
+
+# log files
+logs/
