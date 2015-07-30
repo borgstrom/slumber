@@ -72,7 +72,9 @@ class PlaybackManager(object):
         c1 = pygame.mixer.Channel(1)
         sound = pygame.mixer.Sound('sounds/0/24511__glaneur-de-sons__riviere-river_SLUMBER.wav')
         c1.play(sound, -1)
-        self.fade_out(c1, 20)
+        def fade_done():
+            self.log.debug("DONE!")
+        self.fade_out(c1, 5, fade_done)
 
     def fade_in(self, channel, duration, callback=None):
         """
@@ -92,7 +94,7 @@ class PlaybackManager(object):
         :param duration: The durationt he fade_out should occur over, in seconds
         :param callback: An optional callback to run upon completion
         """
-        self._do_fade(channel, duration, start=1.0, target=0.0)
+        self._do_fade(channel, duration, start=1.0, target=0.0, callback=callback)
 
     def _do_fade(self, channel, duration, start, target, callback=None):
         """
@@ -129,7 +131,17 @@ class PlaybackManager(object):
         :param seconds_step: How often to re-run this step
         :param callback: An optional callback to run once we reach our target
         """
-        new_volume = channel.get_volume() + step
+        current_volume = channel.get_volume()
+        new_volume = current_volume + step
+
+        # since our steps will not fully align with the target this ensures that we
+        # set the specific target value once we surpass it
+        if new_volume > current_volume and new_volume > target:
+            new_volume = target
+        elif new_volume < current_volume and new_volume < target:
+            new_volume = target
+
+        # self.log.debug("_fade_step: channel=%s, new_volume=%f", channel, new_volume)
         channel.set_volume(new_volume)
 
         if new_volume != target:
