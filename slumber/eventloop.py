@@ -3,8 +3,49 @@ This contains the slumber event loop code
 """
 
 import datetime
+import functools
 import logging
 import time
+
+def coroutine(loop=None):
+    """
+    This is a decorator used in conjunction with the EventLoop to make callback based code easier to read & write
+
+    It is based off of the syntax that tornado uses::
+
+        @coroutine
+        def myfunction():
+            do_something_right_now()
+            yield do_domething_during_the_next_loop()
+
+    Anytime you yield in a function that is called by the event loop, the function will suspend and resume at the
+    next loop, allowing for neater code that shares the CPU better.
+    """
+    if loop is None:
+        loop = EventLoop.current()
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            # call the function, this will create a generator object due to the yield statements
+            generator = func(*args, **kwargs)
+
+            # this is used to iterate through the generator via the event loop
+            def drain_generator():
+                try:
+                    generator.next()
+                except StopIteration:
+                    # end of the generator
+                    pass
+                else:
+                    # re-call ourselves during the next loop
+                    loop.add_callback(drain_generator)
+
+            # make the initial call
+            loop.add_callback(drain_generator)
+        return wrapper
+    return decorator
+
 
 class EventLoop(object):
     """

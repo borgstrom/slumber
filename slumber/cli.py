@@ -38,8 +38,8 @@ def main():
     # XXX TODO
 
     # create the playback manager
-    playback_manager = PlaybackManager(args.sounds)
-    playback_manager.start(loop)
+    playback_manager = PlaybackManager(loop, args.sounds)
+    loop.add_callback(playback_manager.start)
 
     # run our event loop, this will block
     try:

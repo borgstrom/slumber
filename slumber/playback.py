@@ -4,7 +4,7 @@ Slumber playback code
 Makes use of the pygame mixer
 """
 
-import datetime
+import copy
 import logging
 import os
 import random
@@ -14,12 +14,72 @@ import pygame
 from glob import glob
 from functools import partial
 
+class InvalidPlaybackCommand(Exception):
+    pass
+
+class PlaybackCommands(object):
+    """
+    This class reads the SLUMBER files in each stage and executes the commands inside them
+    """
+
+    def __init__(self, manager, stage):
+        """
+        """
+        self.log = logging.getLogger('commands')
+
+        self.manager = manager
+        self.stage = stage
+
+        self.command_file = os.path.join(stage, 'SLUMBER')
+        self.original_commands = []
+        self.commands = []
+        self.current_command = -1
+
+        self.log.info("Reading command file: %s", self.command_file)
+
+        # validate the commands
+        for line in open(self.command_file).readlines():
+            line = line.strip()
+            func_name, arg_string = line.split(" ", 1)
+            command_func = getattr(self, func_name)
+            if command_func is None:
+                raise InvalidPlaybackCommand(func_name)
+
+            self.log.debug(" - %s -> %s", line, command_func)
+            self.original_commands.append((command_func, arg_string.split()))
+
+    def start(self):
+        self.commands = copy.copy(self.original_commands)
+        self.next_command()
+
+    def next_command(self):
+        try:
+            func, args = self.commands.pop(0)
+        except IndexError:
+            # this means we are out of commands, tell our manager
+            self.manager.stage_finished(self.stage)
+        else:
+            self.log.debug("[%s] Running next command: %s, %s", self.stage, func, args)
+            func(*args)
+
+    def fade_in(self, duration):
+        duration = int(duration)
+        self.manager.fade_in(self.manager.channels[self.stage], duration, self.next_command)
+
+    def fade_out(self, duration):
+        duration = int(duration)
+        self.manager.fade_out(self.manager.channels[self.stage], duration, self.next_command)
+
+    def wait(self, duration):
+        duration = int(duration)
+        self.manager.loop.add_callback(self.next_command, deadline={'seconds': duration})
+
 class PlaybackManager(object):
     """
     The playback manager takes care of playing back sounds
     """
 
-    def __init__(self, sounds_directory):
+    def __init__(self, loop, sounds_directory):
         """
         Initialize the playback manager
 
@@ -28,10 +88,11 @@ class PlaybackManager(object):
         """
         self.log = logging.getLogger('playback')
 
-        self.loop = None
+        self.loop = loop
 
         # this will be used to track our currently playing sounds
         self.next_channel_id = 0
+        self.commands = {}
         self.channels = {}
         self.sounds = {}
         self.stages = []
@@ -55,27 +116,38 @@ class PlaybackManager(object):
 
         for stage in stages:
             if not os.path.isdir(stage):
-                self.log.error("Invalid stage: %s -- skipping", stage)
+                self.log.error("Invalid stage: %s -- it is not a directory", stage)
                 continue
+
+            slumber_file = os.path.join(stage, 'SLUMBER')
+            if not os.path.exists(slumber_file):
+                self.log.error("Invalid stage: %s -- missing SLUMBER file (%s)", stage, slumber_file)
+                continue
+
             self.stages.append(stage)
-            self.sounds[stage] = glob(os.path.join(stage, '*'))
+            self.sounds[stage] = glob(os.path.join(stage, '*.wav'))
             self.log.debug("Found sounds for stage %s: %s", stage, self.sounds[stage])
 
-    def start(self, loop):
+            self.commands[stage] = PlaybackCommands(self, stage)
+
+    def start(self):
         """
-        Start playback via an event loop based on 90 minute cycles
-
-        Start a sound from each stage.
-
-        A sound from the first stage will always be playing
-
+        Start playback via an event loop
 
         :param: loop: the event loop to use
         """
-        self.loop = loop
-
         for stage in self.stages:
             self.play_sound_for_stage(stage, random.choice(self.sounds[stage]))
+            self.commands[stage].start()
+
+    def stage_finished(self, stage):
+        """
+        A stage has finished executing commands
+
+        :param stage:
+        :return:
+        """
+        pass
 
     def play_sound_for_stage(self, stage, sound_file):
         self.log.info("[%s] Starting %s", stage, sound_file)
