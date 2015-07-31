@@ -1,7 +1,11 @@
 Slumber
 =======
 
-This is a white noise machine written in Python.
+This is a white noise machine written in Python.  Really it's just an audio playback system that has a simple command
+language and comes with a collection of sounds that have been sorted in a specific way.
+
+It is meant to be run on an Raspberry Pi plugged into small powered speakers and placed near your bed, but can easily
+be run on any machine that has Python & Pygame and can produce audio.
 
 
 Use
@@ -46,8 +50,16 @@ sound over and over there's no reason to waste cycles decoding anything.
    Original link: http://freesound.org/people/unfa/sounds/177479/
    By http://freesound.org/people/unfa/
 
+ * sounds/1/93683__sithjawa__rainfrog-loop-1_SLUMBER.wav
+   Original link: http://freesound.org/people/sithjawa/sounds/93683/
+   By http://freesound.org/people/sithjawa/
+
  * sounds/2/104952_Glaneur_de_sons__wind_SLUMBER.wav
    Original link: http://freesound.org/people/Glaneur%20de%20sons/sounds/104952/
    By http://freesound.org/people/Glaneur%20de%20sons/
+
+ * sounds/2/105360__strangely-gnarled__windroar-constant-1m12s_SLUMBER.wav
+   Original link: http://freesound.org/people/strangely_gnarled/sounds/105360/
+   By http://freesound.org/people/strangely_gnarled/
 
 .. vim: set tw=100 wrap spell :

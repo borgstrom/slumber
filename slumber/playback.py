@@ -224,7 +224,7 @@ class PlaybackManager(object):
         if channel_id not in self.channels or self.channels[channel_id] is None:
             raise InvalidChannel(channel_id)
 
-        self.log.debug("Playing %s on channel %d", sound_file, channel_id)
+        self.log.info("Playing %s on channel %d", sound_file, channel_id)
         sound = pygame.mixer.Sound(sound_file)
         self.channels[channel_id].play(sound, -1)
 
