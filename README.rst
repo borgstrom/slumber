@@ -30,36 +30,24 @@ through a "normalize" filter to -1dB in Audacity.
 We pre-convert the sounds to save processor time when playing back.  If we're going to play the same
 sound over and over there's no reason to waste cycles decoding anything.
 
- * sounds/0/165342__corsica-s__above-chocolate-falls_SLUMBER.wav
-   Original link: http://freesound.org/people/Corsica_S/sounds/165342/
-   By http://freesound.org/people/Corsica_S/
+Sounds Used
+~~~~~~~~~~~
 
- * sounds/0/174763__corsica-s__pacific-ocean_SLUMBER.wav
-   Original link: http://freesound.org/people/Corsica_S/sounds/174763/
-   By http://freesound.org/people/Corsica_S/
-
- * sounds/0/24511__glaneur-de-sons__riviere-river_SLUMBER.wav
-   Original link: http://freesound.org/people/Glaneur%20de%20sons/sounds/24511/
-   By http://freesound.org/people/Glaneur%20de%20sons/
-
- * sounds/0/82058__benboncan__lapping-waves_SLUMBER.wav
-   Original link: http://freesound.org/people/Benboncan/sounds/82058/
-   By http://freesound.org/people/Benboncan/
-
- * sounds/1/177479__unfa__slowly-raining-loop_SLUMBER.wav
-   Original link: http://freesound.org/people/unfa/sounds/177479/
-   By http://freesound.org/people/unfa/
-
- * sounds/1/93683__sithjawa__rainfrog-loop-1_SLUMBER.wav
-   Original link: http://freesound.org/people/sithjawa/sounds/93683/
-   By http://freesound.org/people/sithjawa/
-
- * sounds/2/104952_Glaneur_de_sons__wind_SLUMBER.wav
-   Original link: http://freesound.org/people/Glaneur%20de%20sons/sounds/104952/
-   By http://freesound.org/people/Glaneur%20de%20sons/
-
- * sounds/2/105360__strangely-gnarled__windroar-constant-1m12s_SLUMBER.wav
-   Original link: http://freesound.org/people/strangely_gnarled/sounds/105360/
-   By http://freesound.org/people/strangely_gnarled/
+* `sounds/0/165342__corsica-s__above-chocolate-falls_SLUMBER.wav`_ by http://freesound.org/people/Corsica_S/
+.. _sounds/0/165342__corsica-s__above-chocolate-falls_SLUMBER.wav: http://freesound.org/people/Corsica_S/sounds/165342/
+* `sounds/0/174763__corsica-s__pacific-ocean_SLUMBER.wav`_ by http://freesound.org/people/Corsica_S/
+.. _sounds/0/174763__corsica-s__pacific-ocean_SLUMBER.wav: http://freesound.org/people/Corsica_S/sounds/174763/
+* `sounds/0/24511__glaneur-de-sons__riviere-river_SLUMBER.wav`_ by http://freesound.org/people/Glaneur%20de%20sons/
+.. _sounds/0/24511__glaneur-de-sons__riviere-river_SLUMBER.wav: http://freesound.org/people/Glaneur%20de%20sons/sounds/24511/
+* `sounds/0/82058__benboncan__lapping-waves_SLUMBER.wav`_ by http://freesound.org/people/Benboncan/
+.. _sounds/0/82058__benboncan__lapping-waves_SLUMBER.wav: http://freesound.org/people/Benboncan/sounds/82058/
+* `sounds/1/177479__unfa__slowly-raining-loop_SLUMBER.wav`_ by http://freesound.org/people/unfa/
+.. _sounds/1/177479__unfa__slowly-raining-loop_SLUMBER.wav: http://freesound.org/people/unfa/sounds/177479/
+* `sounds/1/93683__sithjawa__rainfrog-loop-1_SLUMBER.wav`_ by http://freesound.org/people/sithjawa/
+.. _sounds/1/93683__sithjawa__rainfrog-loop-1_SLUMBER.wav: http://freesound.org/people/sithjawa/sounds/93683/
+* `sounds/2/104952_Glaneur_de_sons__wind_SLUMBER.wav`_ by http://freesound.org/people/Glaneur%20de%20sons/
+.. _sounds/2/104952_Glaneur_de_sons__wind_SLUMBER.wav: http://freesound.org/people/Glaneur%20de%20sons/sounds/104952/
+* `sounds/2/105360__strangely-gnarled__windroar-constant-1m12s_SLUMBER.wav`_ by http://freesound.org/people/strangely_gnarled/
+.. _sounds/2/105360__strangely-gnarled__windroar-constant-1m12s_SLUMBER.wav: http://freesound.org/people/strangely_gnarled/sounds/105360/
 
 .. vim: set tw=100 wrap spell :

@@ -9,8 +9,6 @@ for sound in sounds/*/*.wav; do
 	freesound_link=$(echo $freesound_a_tag | xmllint --xpath "//a/@href" - | awk -F'"' '{print "http://freesound.org"$2}')
 	freesound_author=$(curl -s $freesound_link | grep 'id="sound_author"' | xmllint --xpath '//div/a' - | awk -F'"' '{print "http://freesound.org"$2}')
 
-	echo " * $sound"
-	echo "   Original link: $freesound_link"
-	echo "   By $freesound_author"
-	echo ""
+	echo "* \`$sound\`_ by $freesound_author"
+	echo ".. _$sound: $freesound_link"
 done
