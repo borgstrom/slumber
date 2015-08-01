@@ -209,7 +209,6 @@ class PlaybackManager(object):
         os.environ["SDL_VIDEODRIVER"] = "dummy"
 
         # init pygame
-        pygame.mixer.pre_init(buffer=2048)
         pygame.init()
         self.loop.add_shutdown_callback(pygame.quit)
 
@@ -238,6 +237,7 @@ class PlaybackManager(object):
 
             self.stages.append(stage)
 
+    @coroutine
     def start(self):
         """
         Start playback via an event loop
@@ -245,4 +245,4 @@ class PlaybackManager(object):
         :param: loop: the event loop to use
         """
         for stage in self.stages:
-            self.commands[stage].start()
+            yield self.commands[stage].start()
