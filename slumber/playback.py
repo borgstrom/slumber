@@ -58,6 +58,7 @@ class PlaybackCommands(object):
         self.channel = None
         self.current_sound = None
         self.swapping = False
+        self.swapped = False
         self.swap_channel = None
         self.swap_sound = None
 
@@ -67,7 +68,12 @@ class PlaybackCommands(object):
         # validate the commands
         for line in open(self.command_file).readlines():
             line = line.strip()
-            func_name, arg_string = line.split(" ", 1)
+            try:
+                func_name, arg_string = line.split(" ", 1)
+            except ValueError:
+                func_name = line
+                arg_string = ""
+
             func_name = 'command_%s' % func_name
             command_func = getattr(self, func_name)
             if command_func is None:
@@ -82,9 +88,6 @@ class PlaybackCommands(object):
         if self.channel is None:
             self.channel = self.manager.get_channel()
 
-        self.current_sound = self.new_sound()
-        self.manager.play(self.channel, self.current_sound)
-
         yield self.process_commands()
 
     @coroutine
@@ -95,6 +98,7 @@ class PlaybackCommands(object):
         self.swap_channel = None
         self.swap_sound = None
         self.swapping = False
+        self.swapped = True
 
         yield self.process_commands()
 
@@ -132,30 +136,40 @@ class PlaybackCommands(object):
 
         return new_sound
 
+    def command_play(self, fade_duration=0):
+        fade_duration = int(fade_duration) * 1000
 
-    def command_fade_in(self, duration):
-        duration = int(duration)
-        self.manager.fade_in(self.channel, duration, callback=self.next_command)
+        if self.swapped:
+            self.swapped = False
+        else:
+            self.current_sound = self.new_sound()
+            self.manager.play(self.channel, self.current_sound, fade_duration)
 
-    def command_fade_out(self, duration):
-        duration = int(duration)
-        self.manager.fade_out(self.channel, duration, callback=self.next_command)
+        self.command_wait(fade_duration / 1000)
+
+    def command_fadeout(self, duration):
+        duration = int(duration) * 1000
+        self.manager.channels[self.channel].fadeout(duration)
+        self.command_wait(duration / 1000)
 
     def command_wait(self, duration):
         duration = int(duration)
         self.manager.loop.add_callback(self.next_command, deadline={'seconds': duration})
 
     def command_swap(self, duration):
-        duration = int(duration)
+        duration = int(duration) * 1000
 
+        self.swapping = True
         self.swap_channel = self.manager.get_channel()
         self.swap_sound = self.new_sound()
-        self.manager.play(self.swap_channel, self.swap_sound)
-        self.manager.fade_in(self.swap_channel, duration)
-        self.manager.fade_out(self.channel, duration)
-        self.swapping = True
+        self.manager.play(self.swap_channel, self.swap_sound, duration)
+        self.manager.channels[self.channel].fadeout(duration)
+        self.command_wait(duration / 1000)
 
-        self.manager.loop.add_callback(self.next_command, deadline={'seconds': duration + 1})
+    def command_set_volume(self, volume):
+        volume = float(volume)
+        self.manager.channels[self.channel].set_volume(volume)
+        self.command_wait(0)
 
 
 class PlaybackManager(object):
@@ -191,7 +205,7 @@ class PlaybackManager(object):
         os.environ["SDL_VIDEODRIVER"] = "dummy"
 
         # init pygame
-        pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=16384)
+        pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=2048)
         pygame.init()
         self.loop.add_shutdown_callback(pygame.quit)
 
@@ -229,19 +243,20 @@ class PlaybackManager(object):
         for stage in self.stages:
             self.commands[stage].start()
 
-    def play(self, channel_id, sound_file):
+    def play(self, channel_id, sound_file, fade_duration=0):
         """
         Play a sound on the specified channel
 
         :param channel_id: The ID of a channel, see get_channel
         :param sound_file: The path of a sound file
+        :param fade_duration: The duration to fade in by, in ms
         """
         if channel_id not in self.channels or self.channels[channel_id] is None:
             raise InvalidChannel(channel_id)
 
         self.log.info("Playing %s on channel %d", sound_file, channel_id)
         sound = pygame.mixer.Sound(sound_file)
-        self.channels[channel_id].play(sound, -1)
+        self.channels[channel_id].play(sound, -1, fade_ms=fade_duration)
 
     def get_channel(self):
         """
@@ -270,84 +285,3 @@ class PlaybackManager(object):
         self.channels[channel_id].stop()
         self.channels[channel_id] = None
 
-    def fade_in(self, channel_id, duration, callback=None):
-        """
-        Fades a channel in over the specified duration
-
-        :param channel_id: A valid channel_id
-        :param duration: The duration the fade_in should occur over, in seconds
-        :param callback: An optional callback to run upon completion
-        """
-        self._do_fade(channel_id, duration, start=0.0, target=1.0, callback=callback)
-
-    def fade_out(self, channel_id, duration, callback=None):
-        """
-        Fades a channel out over the specified duration
-
-        :param channel_id: A valid channel_id
-        :param duration: The duration the fade_out should occur over, in seconds
-        :param callback: An optional callback to run upon completion
-        """
-        self._do_fade(channel_id, duration, start=1.0, target=0.0, callback=callback)
-
-    def _do_fade(self, channel_id, duration, start, target, callback=None):
-        """
-        Starts a fade on a channel, used by fade_in & fade_out
-
-        :param channel_id: A valid channel_id
-        :param duration: The duration, in seconds
-        :param start: The volume to start at
-        :param target: The target volume
-        :param callback: An optional callback to run upon completion
-        """
-        if channel_id not in self.channels or self.channels[channel_id] is None:
-            raise InvalidChannel(channel_id)
-
-        # adjust the volume twice a second
-        seconds_step = 0.5
-
-        # calculate how much the volume needs to change each step
-        if start < target:
-            step = (target - start) / (duration / seconds_step)
-        else:
-            step = (start - target) / (duration / seconds_step) * -1
-
-        self.channels[channel_id].set_volume(start)
-        callback = partial(self._fade_step, channel_id, step, target, seconds_step, callback)
-        self.log.debug("_do_fade: channel_id=%d, duration=%f, start=%f, target=%f, step=%f, callback=%s",
-                                  channel_id, duration, start, target, step, callback)
-        self.loop.add_callback(callback, deadline={'seconds': seconds_step})
-
-    def _fade_step(self, channel_id, step, target, seconds_step, callback=None):
-        """
-        The callback used by the event loop to do the actual fading.
-
-        :param channel_id: A valid channel_id
-        :param step: How much to step each iteration
-        :param target: The target to fade to
-        :param seconds_step: How often to re-run this step
-        :param callback: An optional callback to run once we reach our target
-        """
-        if channel_id not in self.channels or self.channels[channel_id] is None:
-            raise InvalidChannel(channel_id)
-
-        current_volume = self.channels[channel_id].get_volume()
-        new_volume = current_volume + step
-
-        # since our steps may not fully align with the target this ensures that we
-        # set the specific target value once we surpass it
-        if new_volume > current_volume and new_volume > target:
-            new_volume = target
-        elif new_volume < current_volume and new_volume < target:
-            new_volume = target
-
-        self.channels[channel_id].set_volume(new_volume)
-
-        if new_volume != target:
-            # repeat the fade step
-            callback = partial(self._fade_step, channel_id, step, target, seconds_step, callback)
-            self.loop.add_callback(callback, deadline={'seconds': seconds_step})
-
-        elif hasattr(callback, '__call__'):
-            # we have reached our target, call the callback -- if we have one
-            callback()
