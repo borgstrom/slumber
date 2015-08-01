@@ -45,4 +45,4 @@ def main():
     try:
         loop.start()
     except (KeyboardInterrupt, SystemExit):
-        pass
+        loop.stop()

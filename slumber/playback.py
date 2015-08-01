@@ -39,6 +39,7 @@ class PlaybackCommands(object):
 
     def __init__(self, manager, stage):
         """
+        Setup our attributes, load our sounds & validate our commands
         """
         self.log = logging.getLogger('commands')
 
@@ -75,25 +76,32 @@ class PlaybackCommands(object):
             self.log.debug(" - %s -> %s", line, command_func)
             self.original_commands.append((command_func, arg_string.split()))
 
+    @coroutine
     def start(self):
         self.log.info("Starting playback for %s", self.stage)
+        if self.channel is None:
+            self.channel = self.manager.get_channel()
 
-        # are we swapping?
-        if self.swapping:
-            self.manager.release_channel(self.channel)
-            self.channel = copy.copy(self.swap_channel)
-            self.current_sound = copy.copy(self.swap_sound)
-            self.swap_channel = None
-            self.swap_sound = None
-        else:
-            if self.channel is None:
-                self.channel = self.manager.get_channel()
+        self.current_sound = self.new_sound()
+        self.manager.play(self.channel, self.current_sound)
 
-            self.current_sound = self.new_sound()
-            self.manager.play(self.channel, self.current_sound)
+        yield self.process_commands()
 
+    @coroutine
+    def finish_swap(self):
+        self.manager.release_channel(self.channel)
+        self.channel = copy.copy(self.swap_channel)
+        self.current_sound = copy.copy(self.swap_sound)
+        self.swap_channel = None
+        self.swap_sound = None
+        self.swapping = False
+
+        yield self.process_commands()
+
+    @coroutine
+    def process_commands(self):
         self.commands = copy.copy(self.original_commands)
-        self.next_command()
+        yield self.next_command()
 
     @coroutine
     def next_command(self):
@@ -101,7 +109,11 @@ class PlaybackCommands(object):
             func, args = self.commands.pop(0)
         except IndexError:
             # this means we are out of commands, re-start
-            yield self.start()
+            # are we swapping?
+            if self.swapping:
+                yield self.finish_swap()
+            else:
+                yield self.start()
         else:
             self.log.debug("[%s] Running next command: %s, %s", self.stage, func, args)
             yield func(*args)
@@ -143,7 +155,7 @@ class PlaybackCommands(object):
         self.manager.fade_out(self.channel, duration)
         self.swapping = True
 
-        self.manager.loop.add_callback(self.next_command, deadline={'seconds': duration})
+        self.manager.loop.add_callback(self.next_command, deadline={'seconds': duration + 1})
 
 
 class PlaybackManager(object):
@@ -179,7 +191,9 @@ class PlaybackManager(object):
         os.environ["SDL_VIDEODRIVER"] = "dummy"
 
         # init pygame
+        pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=16384)
         pygame.init()
+        self.loop.add_shutdown_callback(pygame.quit)
 
     def load_sounds(self, sounds_directory):
         """
@@ -236,6 +250,7 @@ class PlaybackManager(object):
         """
         for channel_id, channel in self.channels.items():
             if channel is None:
+                self.log.debug("Allocating channel %d", channel_id)
                 self.channels[channel_id] = pygame.mixer.Channel(channel_id)
                 return channel_id
 
@@ -250,6 +265,7 @@ class PlaybackManager(object):
         if channel_id not in self.channels or self.channels[channel_id] is None:
             raise InvalidChannel(channel_id)
 
+        self.log.debug("Releasing channel %d", channel_id)
         self.channels[channel_id].stop()
         self.channels[channel_id] = None
 

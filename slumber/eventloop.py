@@ -77,6 +77,7 @@ class EventLoop(object):
         self.running = True
         self.sleep = sleep
         self.callbacks = []
+        self.shutdown_callbacks = []
 
     def start(self):
         """
@@ -103,7 +104,10 @@ class EventLoop(object):
                         continue
 
                 # invoke the callback
-                callback()
+                try:
+                    callback()
+                except Exception:
+                    self.log.exception("Failed to run callback")
 
                 # we ran a callback, we're not idle
                 # this will re-execute the loop without a sleep to allow for "real-time" interleaving of tasks
@@ -118,12 +122,17 @@ class EventLoop(object):
         Stop the event loop
         """
         self.running = False
+        for callback in self.shutdown_callbacks:
+            try:
+                callback()
+            except Exception:
+                self.log.exception("Failed to run shutdown callback")
 
     def add_callback(self, callback, deadline=None):
         """
         Add a callback to be run during the next loop iteration
 
-        :param: callback:  A code reference to run
+        :param: callback:  A callable
         :param: deadline:  If specified it should be a datetime object in the future, describing
                            when the callback should run.  It will be compared against
                            datetime.datetime.now()
@@ -135,3 +144,11 @@ class EventLoop(object):
             deadline = datetime.datetime.now() + datetime.timedelta(**deadline)
 
         self.callbacks.append((callback, deadline))
+
+    def add_shutdown_callback(self, callback):
+        """
+        Add a callback to the shutdown callbacks
+
+        :param callback: A callable
+        """
+        self.shutdown_callbacks.append(callback)
