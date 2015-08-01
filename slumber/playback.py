@@ -202,6 +202,7 @@ class PlaybackManager(object):
         self.log.info("Loading sounds from: %s", sounds_directory)
 
         stages = glob(os.path.join(sounds_directory, '*'))
+        stages.sort()
         self.log.debug("Found stages: %s", stages)
 
         for stage in stages:
