@@ -46,21 +46,19 @@ class PlaybackCommands(object):
         self.manager = manager
         self.stage = stage
 
-        self.sounds = glob(os.path.join(stage, '*.wav'))
-        if len(self.sounds) == 0:
+        self.sound_files = glob(os.path.join(stage, '*.wav'))
+        if len(self.sound_files) == 0:
             raise NoSounds("The stage %s does not contain any sounds!", stage)
 
         self.command_file = os.path.join(stage, 'SLUMBER')
         self.original_commands = []
         self.commands = []
-        self.current_command = -1
 
-        self.channel = None
-        self.current_sound = None
+        self.sounds = {}
+        self.sound_file = None
+        self.swap_sound_file = None
         self.swapping = False
         self.swapped = False
-        self.swap_channel = None
-        self.swap_sound = None
 
         self.log.info("Initializing playback command for %s", stage)
         self.log.debug("Reading command file: %s", self.command_file)
@@ -85,27 +83,20 @@ class PlaybackCommands(object):
     @coroutine
     def start(self):
         self.log.info("Starting playback for %s", self.stage)
-        if self.channel is None:
-            self.channel = self.manager.get_channel()
-
-        yield self.process_commands()
+        self.commands = copy.copy(self.original_commands)
+        yield self.next_command()
 
     @coroutine
     def finish_swap(self):
-        self.manager.release_channel(self.channel)
-        self.channel = copy.copy(self.swap_channel)
-        self.current_sound = copy.copy(self.swap_sound)
-        self.swap_channel = None
-        self.swap_sound = None
+        self.sounds[self.sound_file].stop()
+        del self.sounds[self.sound_file]
+
+        self.sound_file = copy.copy(self.swap_sound_file)
+        self.swap_sound_file = None
         self.swapping = False
         self.swapped = True
 
-        yield self.process_commands()
-
-    @coroutine
-    def process_commands(self):
-        self.commands = copy.copy(self.original_commands)
-        yield self.next_command()
+        yield self.start()
 
     @coroutine
     def next_command(self):
@@ -126,13 +117,13 @@ class PlaybackCommands(object):
         """
         Returns a new sound file
         """
-        new_sound = random.choice(self.sounds)
+        new_sound = random.choice(self.sound_files)
 
         # if we have a current sound, and more than one total sounds then we want to make sure the new sound
         # isn't the same as what's currently playing
-        if self.current_sound is not None and len(self.sounds) > 1:
-            while new_sound == self.current_sound:
-                new_sound = random.choice(self.sounds)
+        if self.sound_file is not None and len(self.sound_files) > 1:
+            while new_sound == self.sound_file:
+                new_sound = random.choice(self.sound_files)
 
         return new_sound
 
@@ -141,15 +132,24 @@ class PlaybackCommands(object):
 
         if self.swapped:
             self.swapped = False
+            self.log.debug("Swap complete")
         else:
-            self.current_sound = self.new_sound()
-            self.manager.play(self.channel, self.current_sound, fade_duration)
+            if self.sound_file and self.sound_file in self.sounds:
+                self.sounds[self.sound_file].stop()
+                del self.sounds[self.sound_file]
+
+            self.sound_file = self.new_sound()
+            self.log.debug("[%s] Playing %s", self.stage, self.sound_file)
+            self.sounds[self.sound_file] = pygame.mixer.Sound(self.sound_file)
+            self.sounds[self.sound_file].play(-1, fade_ms=fade_duration)
 
         self.command_wait(fade_duration / 1000)
 
     def command_fadeout(self, duration):
         duration = int(duration) * 1000
-        self.manager.channels[self.channel].fadeout(duration)
+        if self.sound_file and self.sound_file in self.sounds:
+            self.sounds[self.sound_file].fadeout(duration)
+
         self.command_wait(duration / 1000)
 
     def command_wait(self, duration):
@@ -159,22 +159,27 @@ class PlaybackCommands(object):
     def command_swap(self, duration):
         duration = int(duration) * 1000
 
-        self.swapping = True
-        self.swap_channel = self.manager.get_channel()
-        self.swap_sound = self.new_sound()
-        self.manager.play(self.swap_channel, self.swap_sound, duration)
-        self.manager.channels[self.channel].fadeout(duration)
+        if self.sound_file and self.sound_file in self.sounds:
+            self.swapping = True
+            self.swap_sound_file = self.new_sound()
+            self.log.info("[%s] Swapping with %s", self.stage, self.swap_sound_file)
+            self.sounds[self.swap_sound_file] = pygame.mixer.Sound(self.swap_sound_file)
+            self.sounds[self.swap_sound_file].play(-1, fade_ms=duration)
+            self.sounds[self.sound_file].fadeout(duration)
+
         self.command_wait(duration / 1000)
 
     def command_set_volume(self, volume):
         volume = float(volume)
-        self.manager.channels[self.channel].set_volume(volume)
+        if self.sound_file and self.sound_file in self.sounds:
+            self.sounds[self.sound_file].set_volume(volume)
+
         self.command_wait(0)
 
 
 class PlaybackManager(object):
     """
-    The playback manager takes care of playing back sounds
+    The playback manager takes care of starting a PlaybackCommand object for each stage
     """
 
     def __init__(self, loop, sounds_directory):
@@ -192,7 +197,6 @@ class PlaybackManager(object):
         self.commands = {}
         self.sounds = {}
         self.stages = []
-        self.current_stage = None
         self.load_sounds(sounds_directory)
 
         # pygame gives us 8 channels to work with
@@ -205,7 +209,7 @@ class PlaybackManager(object):
         os.environ["SDL_VIDEODRIVER"] = "dummy"
 
         # init pygame
-        pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=2048)
+        pygame.mixer.pre_init(buffer=2048)
         pygame.init()
         self.loop.add_shutdown_callback(pygame.quit)
 
@@ -242,46 +246,3 @@ class PlaybackManager(object):
         """
         for stage in self.stages:
             self.commands[stage].start()
-
-    def play(self, channel_id, sound_file, fade_duration=0):
-        """
-        Play a sound on the specified channel
-
-        :param channel_id: The ID of a channel, see get_channel
-        :param sound_file: The path of a sound file
-        :param fade_duration: The duration to fade in by, in ms
-        """
-        if channel_id not in self.channels or self.channels[channel_id] is None:
-            raise InvalidChannel(channel_id)
-
-        self.log.info("Playing %s on channel %d", sound_file, channel_id)
-        sound = pygame.mixer.Sound(sound_file)
-        self.channels[channel_id].play(sound, -1, fade_ms=fade_duration)
-
-    def get_channel(self):
-        """
-        Get a new channel
-
-        :return: The ID of the channel
-        """
-        for channel_id, channel in self.channels.items():
-            if channel is None:
-                self.log.debug("Allocating channel %d", channel_id)
-                self.channels[channel_id] = pygame.mixer.Channel(channel_id)
-                return channel_id
-
-        raise NoMoreChannels("There are no free channels")
-
-    def release_channel(self, channel_id):
-        """
-        Releases the specified channel
-
-        :param channel_id: The ID of the channel
-        """
-        if channel_id not in self.channels or self.channels[channel_id] is None:
-            raise InvalidChannel(channel_id)
-
-        self.log.debug("Releasing channel %d", channel_id)
-        self.channels[channel_id].stop()
-        self.channels[channel_id] = None
-
