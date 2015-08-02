@@ -82,7 +82,7 @@ class PlaybackCommands(object):
 
     @coroutine
     def start(self):
-        self.log.info("Starting playback for %s", self.stage)
+        self.log.info("[%s] Processing %d commands", self.stage, len(self.original_commands))
         self.commands = copy.copy(self.original_commands)
         yield self.next_command()
 
@@ -132,46 +132,49 @@ class PlaybackCommands(object):
 
         if self.swapped:
             self.swapped = False
-            self.log.debug("Swap complete")
+            self.log.info("[%s] Swap complete", self.stage)
         else:
             if self.sound_file and self.sound_file in self.sounds:
                 self.sounds[self.sound_file].stop()
                 del self.sounds[self.sound_file]
 
             self.sound_file = self.new_sound()
-            self.log.debug("[%s] Playing %s", self.stage, self.sound_file)
+            self.log.info("[%s] Playing %s", self.stage, self.sound_file)
             self.sounds[self.sound_file] = pygame.mixer.Sound(self.sound_file)
             self.sounds[self.sound_file].play(-1, fade_ms=fade_duration)
 
         self.command_wait(fade_duration / 1000)
 
     def command_fadeout(self, duration):
-        duration = int(duration) * 1000
+        duration = int(duration)
         if self.sound_file and self.sound_file in self.sounds:
-            self.sounds[self.sound_file].fadeout(duration)
+            self.log.info("[%s] Fading out over %d seconds", self.stage, duration)
+            self.sounds[self.sound_file].fadeout(duration * 1000)
 
-        self.command_wait(duration / 1000)
+        self.command_wait(duration)
 
     def command_wait(self, duration):
         duration = int(duration)
+        self.log.info("[%s] Waiting for %d seconds", self.stage, duration)
         self.manager.loop.add_callback(self.next_command, deadline={'seconds': duration})
 
     def command_swap(self, duration):
-        duration = int(duration) * 1000
+        duration = int(duration)
 
         if self.sound_file and self.sound_file in self.sounds:
             self.swapping = True
             self.swap_sound_file = self.new_sound()
-            self.log.info("[%s] Swapping with %s", self.stage, self.swap_sound_file)
+            self.log.info("[%s] Swapping with %s over %d seconds", self.stage, self.swap_sound_file, duration)
             self.sounds[self.swap_sound_file] = pygame.mixer.Sound(self.swap_sound_file)
-            self.sounds[self.swap_sound_file].play(-1, fade_ms=duration)
-            self.sounds[self.sound_file].fadeout(duration)
+            self.sounds[self.swap_sound_file].play(-1, fade_ms=duration * 1000)
+            self.sounds[self.sound_file].fadeout(duration * 1000)
 
-        self.command_wait(duration / 1000)
+        self.command_wait(duration)
 
     def command_set_volume(self, volume):
         volume = float(volume)
         if self.sound_file and self.sound_file in self.sounds:
+            self.log.info("[%s] Setting volume to %f", self.stage, volume)
             self.sounds[self.sound_file].set_volume(volume)
 
         self.command_wait(0)
