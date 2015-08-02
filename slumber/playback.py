@@ -60,7 +60,7 @@ class PlaybackCommands(object):
         self.swapping = False
         self.swapped = False
 
-        self.log.info("Initializing playback command for %s", stage)
+        self.log.info("Initializing playback commands for %s", stage)
         self.log.debug("Reading command file: %s", self.command_file)
 
         # validate the commands
