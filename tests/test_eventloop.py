@@ -20,13 +20,17 @@ class EventLoopTests(TestCase):
         """
         loop = EventLoop.current()
 
+        # run the coroutine
         self.add_coroutine_results()
 
+        # since the loop isn't running the results will still be empty
         self.assertEqual(self.coroutine_results, [])
 
+        # run the loop, stopping it in 0.25 seconds
         loop.add_callback(loop.stop, {'seconds': 0.25})
         loop.start()
 
+        # our results will now be populated
         self.assertEqual(self.coroutine_results, [1, 2, 3])
 
     def test_add_callback(self):

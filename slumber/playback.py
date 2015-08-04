@@ -60,6 +60,8 @@ class PlaybackCommands(object):
         self.swapping = False
         self.swapped = False
 
+        self.testing = False
+
         self.log.info("Initializing playback commands for %s", stage)
         self.log.debug("Reading command file: %s", self.command_file)
 
@@ -104,6 +106,10 @@ class PlaybackCommands(object):
             func, args = self.commands.pop(0)
         except IndexError:
             # this means we are out of commands, re-start
+            # are we testing?
+            if self.testing:
+                return
+
             # are we swapping?
             if self.swapping:
                 yield self.finish_swap()
