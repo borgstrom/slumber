@@ -21,7 +21,7 @@ before_install:
 
 install:
   - pip install --use-mirrors -q nose
-  - [ -n "$MOCK" ] && pip install --use-mirrors -q $MOCK
+  - '[ -n "$MOCK" ] && pip install --use-mirrors -q $MOCK'
 
 script:
     - nosetests tests/*.py
