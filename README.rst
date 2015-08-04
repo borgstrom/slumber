@@ -1,6 +1,9 @@
 Slumber
 =======
 
+.. image:: https://travis-ci.org/borgstrom/slumber.svg?branch=master
+    :target: https://travis-ci.org/borgstrom/slumber
+
 This is a noise machine to help you sleep better.  Really it's just an audio playback system that has a simple command
 language and comes with a collection of sounds that have been sorted in a specific way.
 
