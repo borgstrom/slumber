@@ -1,23 +1,42 @@
 Slumber
 =======
 
-This is a white noise machine written in Python.  Really it's just an audio playback system that has a simple command
+This is a noise machine to help you sleep better.  Really it's just an audio playback system that has a simple command
 language and comes with a collection of sounds that have been sorted in a specific way.
 
 It is meant to be run on an Raspberry Pi plugged into small powered speakers and placed near your bed, but can easily
 be run on any machine that has Python & Pygame and can produce audio.
 
-
 Use
 ---
 
-It is built using the pygame mixer.
+It is built using Python and the pygame mixer module.
+
+Raspberry Pi's already have pygame loaded and ready to go, just checkout this repository with git and go.
 
 For OS X, see: `Homebrew pygame install instructions`_.
 
 .. _Homebrew pygame install instructions: https://bitbucket.org/pygame/pygame/issues/82/homebrew-on-leopard-fails-to-install#comment-627494
 
+To run slumber::
 
+    python -m slumber.cli -s sounds
+
+See the output of ``--help`` for all options.
+
+
+Raspberry Pi Build
+------------------
+
+A `Raspberry Pi 1 model A+`_ was used along with a `3W+3W 5V Amp`_ and a 4 Ohm 3W speaker to build a small portable
+sleep aid.
+
+Slumber is set to start on boot up right now, in the future I'll add a button.
+
+.. _Raspberry Pi 1 model A+: https://www.raspberrypi.org/products/model-a-plus/
+.. _3W+3W 5V Amp: http://www.amazon.com/gp/product/B00C4N410G
+
+TODO: Write more here
 
 Sounds
 ------

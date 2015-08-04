@@ -46,3 +46,7 @@ def main():
         loop.start()
     except (KeyboardInterrupt, SystemExit):
         loop.stop()
+
+if __name__ == '__main__':
+    main()
+
