@@ -15,7 +15,7 @@ before_install:
 install:
   - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then pip install mock; fi
   - if [[ $TRAVIS_PYTHON_VERSION == 'pypy' ]]; then pip install mock; fi
-  - pip install --use-mirrors -q nose
+  - pip install nose
 
 script:
     - nosetests tests/*.py
