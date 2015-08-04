@@ -7,6 +7,8 @@ language and comes with a collection of sounds that have been sorted in a specif
 It is meant to be run on an Raspberry Pi plugged into small powered speakers and placed near your bed, but can easily
 be run on any machine that has Python & Pygame and can produce audio.
 
+It is licensed under the Apache 2.0 License.
+
 Use
 ---
 
