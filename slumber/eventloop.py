@@ -6,6 +6,7 @@ import datetime
 import functools
 import logging
 import time
+import types
 
 def coroutine(func):
     """
@@ -27,6 +28,11 @@ def coroutine(func):
     def wrapper(*args, **kwargs):
         # call the function, this will create a generator object due to the yield statements
         generator = func(*args, **kwargs)
+
+        if not isinstance(generator, types.GeneratorType):
+            log = logging.getLogger("coroutine")
+            log.error("The function %s is decorated as a coroutine but does not produce a generator", func)
+            return generator
 
         # this is used to iterate through the generator via the event loop
         def drain_generator():
@@ -85,7 +91,6 @@ class EventLoop(object):
         """
         self.log.info('Starting event loop')
         self.running = True
-        idle = True
 
         while self.running:
             idle = True
