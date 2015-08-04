@@ -2,7 +2,10 @@ import os
 import tempfile
 
 from unittest import TestCase
-from mock.mock import MagicMock, patch, call
+try:
+    from unittest.mock import MagicMock, patch, call
+except ImportError:
+    from mock.mock import MagicMock, patch, call
 
 from slumber.eventloop import EventLoop
 from slumber.playback import PlaybackCommands, PlaybackManager
