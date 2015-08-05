@@ -5,6 +5,7 @@ This contains the slumber event loop code
 import datetime
 import functools
 import logging
+import sys
 import time
 import types
 
@@ -37,7 +38,10 @@ def coroutine(func):
         # this is used to iterate through the generator via the event loop
         def drain_generator():
             try:
-                generator.next()
+                if sys.version_info[0] < 3:
+                    generator.next()
+                else:
+                    next(generator)
             except StopIteration:
                 # end of the generator
                 pass
