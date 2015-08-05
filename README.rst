@@ -1,8 +1,14 @@
 Slumber
 =======
 
-.. image:: https://travis-ci.org/borgstrom/slumber.svg?branch=master
-    :target: https://travis-ci.org/borgstrom/slumber
+.. image:: https://img.shields.io/travis/borgstrom/slumber.svg
+   :target: https://travis-ci.org/borgstrom/slumber
+
+.. image:: https://img.shields.io/codecov/c/github/borgstrom/slumber.svg
+   :target: https://codecov.io/github/borgstrom/slumber
+
+.. image:: https://img.shields.io/codeclimate/github/borgstrom/slumber.svg
+   :target: https://codeclimate.com/github/borgstrom/slumber
 
 This is a noise machine to help you sleep better.  Really it's just an audio playback system that has a simple command
 language and comes with a collection of sounds that have been sorted in a specific way.
