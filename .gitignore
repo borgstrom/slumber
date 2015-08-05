@@ -16,6 +16,7 @@ activate
 *.sublime-*
 
 .coverage
+coverage.xml
 TEST-*.xml
 
 # vim swap files
