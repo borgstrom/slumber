@@ -9,10 +9,18 @@ import logging
 import os
 import random
 
-import pygame
+# when we're running during continuous integration we don't actually need pygame (we assume it works)
+# it is also mocked out in most of our tests, so we can just set it to False during CI
+try:
+    import pygame
+except ImportError:
+    import os
+    if 'CI' in os.environ and os.environ['CI'] == 'true':
+        pygame = False
+    else:
+        raise
 
 from glob import glob
-from functools import partial
 
 from slumber.eventloop import coroutine
 
