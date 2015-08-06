@@ -39,15 +39,15 @@ See the output of ``--help`` for all options.
 Raspberry Pi Build
 ------------------
 
-A `Raspberry Pi 1 model A+`_ was used along with a `3W+3W 5V Amp`_ and a 4 Ohm 3W speaker to build a small portable
+.. image:: https://raw.githubusercontent.com/borgstrom/slumber/master/docs/slumber-prototype.jpg
+
+A `Raspberry Pi 1 model A+`_ was used along with a `3W+3W 5V Amp`_ and two 4 Ohm 3W speakers to build a small portable
 sleep aid.
 
 Slumber is set to start on boot up right now, in the future I'll add a button.
 
 .. _Raspberry Pi 1 model A+: https://www.raspberrypi.org/products/model-a-plus/
 .. _3W+3W 5V Amp: http://www.amazon.com/gp/product/B00C4N410G
-
-TODO: Write more here
 
 Sounds
 ------
