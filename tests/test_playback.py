@@ -1,4 +1,7 @@
+import copy
 import os
+import shutil
+import sys
 import tempfile
 
 from unittest import TestCase
@@ -10,7 +13,35 @@ except ImportError:
 from slumber.eventloop import EventLoop
 from slumber.playback import PlaybackCommands, PlaybackManager
 
-class PlaybackTests(TestCase):
+class PlaybackManagerTests(TestCase):
+    def setUp(self):
+        self.sounds_dir = tempfile.mkdtemp()
+        self.stages = []
+
+        for x in range(2):
+            stage_dir = os.path.join(self.sounds_dir, str(x))
+            os.mkdir(stage_dir)
+            for y in range(3):
+                open(os.path.join(stage_dir, "sound%d.wav" % y), 'w').write("RIFF0WAV")
+                open(os.path.join(stage_dir, "SLUMBER"), 'w').write("play")
+
+            self.stages.append(stage_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.sounds_dir, ignore_errors=True)
+
+    @patch('slumber.playback.pygame')
+    def test_init(self, pygame):
+        loop = EventLoop.current()
+        manager = PlaybackManager(loop, self.sounds_dir)
+
+        self.assertEqual(manager.stages, self.stages)
+
+        for stage in self.stages:
+            command = manager.commands[stage]
+            self.assertEqual(len(command.sound_files), 3)
+
+class PlaybackCommandsTests(TestCase):
     commands = [
         "play 5",
         "wait 5",
@@ -32,7 +63,12 @@ class PlaybackTests(TestCase):
         for x in range(4):
             open(stage_path('sound-%d.wav' % x), 'w').write("RIFF0WAV")
 
-class PlaybackCommandsTests(PlaybackTests):
+    def tearDown(self):
+        """
+        Remove what we setup
+        """
+        shutil.rmtree(self.stage, ignore_errors=True)
+
     def test_init(self):
         """
         Test the initialization
@@ -47,7 +83,7 @@ class PlaybackCommandsTests(PlaybackTests):
             (commands.command_wait, ["5"]),
             (commands.command_fadeout, ["5"]),
             (commands.command_set_volume, ["0.9"]),
-            (commands.command_swap, ["5"])
+            (commands.command_swap, ["5"]),
         ])
 
     @patch('slumber.playback.PlaybackCommands.command_wait')
@@ -92,3 +128,17 @@ class PlaybackCommandsTests(PlaybackTests):
 
         # command_wait was mocked out and we logged the durations
         self.assertEqual(commands.test_wait_durations, [5, 5, 5, 0, 5])
+
+        # finish the swap
+        original_sound_file = copy.copy(commands.sound_file)
+        self.assertIn(original_sound_file, commands.sounds)
+        self.assertNotEqual(commands.swap_sound_file, None)
+        self.assertTrue(commands.swapping)
+        self.assertFalse(commands.swapped)
+
+        commands._complete_swap()
+
+        self.assertNotIn(original_sound_file, commands.sounds)
+        self.assertEqual(commands.swap_sound_file, None)
+        self.assertFalse(commands.swapping)
+        self.assertTrue(commands.swapped)

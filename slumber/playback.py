@@ -96,8 +96,7 @@ class PlaybackCommands(object):
         self.commands = copy.copy(self.original_commands)
         yield self.next_command()
 
-    @coroutine
-    def finish_swap(self):
+    def _complete_swap(self):
         self.sounds[self.sound_file].stop()
         del self.sounds[self.sound_file]
 
@@ -106,6 +105,9 @@ class PlaybackCommands(object):
         self.swapping = False
         self.swapped = True
 
+    @coroutine
+    def finish_swap(self):
+        yield self._complete_swap()
         yield self.start()
 
     @coroutine
@@ -214,13 +216,7 @@ class PlaybackManager(object):
         self.commands = {}
         self.sounds = {}
         self.stages = []
-        self.load_sounds(sounds_directory)
-
-        # pygame gives us 8 channels to work with
-        self.channels = dict([
-            (x, None)
-            for x in range(8)
-        ])
+        self.load_playback_commands(sounds_directory)
 
         # force the sdl video driver to be 'dummy' driver so we don't get a pygame window
         os.environ["SDL_VIDEODRIVER"] = "dummy"
@@ -229,9 +225,9 @@ class PlaybackManager(object):
         pygame.init()
         self.loop.add_shutdown_callback(pygame.quit)
 
-    def load_sounds(self, sounds_directory):
+    def load_playback_commands(self, sounds_directory):
         """
-        Load sounds from our sounds directory
+        Load playback commands from our sounds directory
         """
         self.log.info("Loading sounds from: %s", sounds_directory)
 

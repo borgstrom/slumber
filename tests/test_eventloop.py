@@ -55,3 +55,6 @@ class EventLoopTests(TestCase):
         one_minute_from_now = datetime.datetime.now() + datetime.timedelta(minutes=1)
         loop.add_callback(the_callback, one_minute_from_now)
         self.assertEqual(loop.callbacks[2], (the_callback, one_minute_from_now))
+
+        loop.add_shutdown_callback(the_callback)
+        self.assertEqual(loop.shutdown_callbacks, [the_callback])
