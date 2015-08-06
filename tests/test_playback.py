@@ -131,14 +131,14 @@ class PlaybackCommandsTests(TestCase):
 
         # finish the swap
         original_sound_file = copy.copy(commands.sound_file)
-        self.assertIn(original_sound_file, commands.sounds)
+        self.assertTrue(original_sound_file in commands.sounds)
         self.assertNotEqual(commands.swap_sound_file, None)
         self.assertTrue(commands.swapping)
         self.assertFalse(commands.swapped)
 
         commands._complete_swap()
 
-        self.assertNotIn(original_sound_file, commands.sounds)
+        self.assertFalse(original_sound_file in commands.sounds)
         self.assertEqual(commands.swap_sound_file, None)
         self.assertFalse(commands.swapping)
         self.assertTrue(commands.swapped)
