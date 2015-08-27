@@ -14,7 +14,7 @@ def main():
     """
     parser = argparse.ArgumentParser(description='Slumber - Sleep better')
     parser.add_argument('--debug', action='store_true',
-                        help='Turn on debug logging')
+                        help='Turn on debug logging and USR1 breakpoint')
     parser.add_argument('--sounds', '-s', required=True,
                         help='The directory to load sounds from.  It should be organized into numbered directories.')
     args = parser.parse_args()
@@ -32,10 +32,25 @@ def main():
 
     log.info('Slumber - Starting...')
 
-    loop = EventLoop.current()
+    if args.debug:
+        import code, traceback, signal
 
-    # add sensor collection into the loop
-    # XXX TODO
+        def debug_interrupt(sig, frame):
+            debug_locals = dict(frame=frame)
+            debug_locals.update(frame.f_globals)
+            debug_locals.update(frame.f_locals)
+
+            console = code.InteractiveConsole(locals=debug_locals)
+            console.interact("\n".join([
+                "Signal %d received.  Entering Python shell." % sig,
+                "-" * 50,
+                "Traceback:",
+                ''.join(traceback.format_stack(frame))
+            ]))
+
+        signal.signal(signal.SIGUSR1, debug_interrupt)
+
+    loop = EventLoop.current()
 
     # create the playback manager
     playback_manager = PlaybackManager(loop, args.sounds)
