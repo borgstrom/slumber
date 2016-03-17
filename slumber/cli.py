@@ -4,6 +4,7 @@ Slumber CLI interface
 
 import argparse
 import logging
+import signal
 
 from slumber.eventloop import EventLoop
 from slumber.playback import PlaybackManager
@@ -34,33 +35,31 @@ def main():
 
     log.info('Slumber - Starting...')
 
-    if args.debug or args.timer:
-        import signal
-        if args.debug:
-            import code, traceback 
-            
-            def debug_interrupt(sig, frame):
-                debug_locals = dict(frame=frame)
-                debug_locals.update(frame.f_globals)
-                debug_locals.update(frame.f_locals)
-                
-                console = code.InteractiveConsole(locals=debug_locals)
-                console.interact("\n".join([
-                    "Signal %d received.  Entering Python shell." % sig,
-                    "-" * 50,
-                    "Traceback:",
-                    ''.join(traceback.format_stack(frame))
-                ]))
-                    
-            signal.signal(signal.SIGUSR1, debug_interrupt)
+    if args.debug:
+        import code, traceback 
 
-        # set a sleep timer in minutes, minimalist
-        if args.timer:
-            # use SystemExit since that's already caught for debug
-            def stexit(sig, frame):
-              raise SystemExit
-            signal.signal(signal.SIGALRM, stexit)
-            signal.alarm(args.timer * 60)
+        def debug_interrupt(sig, frame):
+            debug_locals = dict(frame=frame)
+            debug_locals.update(frame.f_globals)
+            debug_locals.update(frame.f_locals)
+
+            console = code.InteractiveConsole(locals=debug_locals)
+            console.interact("\n".join([
+                "Signal %d received.  Entering Python shell." % sig,
+                "-" * 50,
+                "Traceback:",
+                ''.join(traceback.format_stack(frame))
+            ]))
+
+        signal.signal(signal.SIGUSR1, debug_interrupt)
+
+    # set a sleep timer in minutes, minimalist
+    if args.timer:
+        # use SystemExit since that's already caught for debug
+        def stexit(sig, frame):
+          raise SystemExit
+        signal.signal(signal.SIGALRM, stexit)
+        signal.alarm(args.timer * 60)
 
     loop = EventLoop.current()
 
