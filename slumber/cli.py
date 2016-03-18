@@ -4,6 +4,7 @@ Slumber CLI interface
 
 import argparse
 import logging
+import signal
 
 from slumber.eventloop import EventLoop
 from slumber.playback import PlaybackManager
@@ -17,6 +18,8 @@ def main():
                         help='Turn on debug logging and USR1 breakpoint')
     parser.add_argument('--sounds', '-s', required=True,
                         help='The directory to load sounds from.  It should be organized into numbered directories.')
+    parser.add_argument('--timer', '-t', required=False, type=int,
+                        help='Set a sleep timer in minutes.')
     args = parser.parse_args()
 
     if args.debug:
@@ -33,7 +36,7 @@ def main():
     log.info('Slumber - Starting...')
 
     if args.debug:
-        import code, traceback, signal
+        import code, traceback 
 
         def debug_interrupt(sig, frame):
             debug_locals = dict(frame=frame)
@@ -49,6 +52,14 @@ def main():
             ]))
 
         signal.signal(signal.SIGUSR1, debug_interrupt)
+
+    # set a sleep timer in minutes, minimalist
+    if args.timer:
+        # use SystemExit since that's already caught for debug
+        def stexit(sig, frame):
+          raise SystemExit
+        signal.signal(signal.SIGALRM, stexit)
+        signal.alarm(args.timer * 60)
 
     loop = EventLoop.current()
 
